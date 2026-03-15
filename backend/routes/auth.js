@@ -97,13 +97,15 @@ router.post('/login', [
 
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.OWNER_EMAIL,
-    pass: process.env.OWNER_EMAIL_PASS
-  }
-});
+function getTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.OWNER_EMAIL,
+      pass: process.env.OWNER_EMAIL_PASS
+    }
+  });
+}
 
 // @route  POST /api/auth/rewards/claim
 // @desc   Claim a reward by deducting points
@@ -163,7 +165,7 @@ router.post('/rewards/claim', async (req, res) => {
 </body>
 </html>`;
       try {
-        await transporter.sendMail({
+        await getTransporter().sendMail({
           from: `"CityFix Rewards" <${process.env.OWNER_EMAIL}>`,
           to: user.email,
           subject: `🎉 CityFix: Your reward "${title || 'Special Reward'}" is ready!`,

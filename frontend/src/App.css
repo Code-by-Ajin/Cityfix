@@ -165,7 +165,7 @@ body {
   font-size: 1.4rem; font-weight: 800; color: var(--text);
   text-decoration: none; display: flex; align-items: center; gap: 6px; flex-shrink: 0;
 }
-.logo span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.logo span { background: var(--gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .logo i { color: var(--primary); }
 
 /* Nav Links */
@@ -275,6 +275,7 @@ body {
   margin-bottom: 1rem;
   background: var(--gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -378,7 +379,7 @@ body {
   line-height: 1.2;
   margin-bottom: 1rem;
 }
-.hero-left h1 span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero-left h1 span { background: var(--gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .hero-left p { color: var(--text-muted); font-size: 1rem; max-width: 480px; line-height: 1.6; margin-bottom: 1.75rem; }
 
 .hero-actions { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
@@ -424,7 +425,7 @@ body {
 .accent-stat .stat-icon { color: var(--accent); }
 .success-stat .stat-icon { color: var(--success); }
 
-.stat-card h3 { font-size: 2rem; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.stat-card h3 { font-size: 2rem; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .stat-card p { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
 
 /* Old hero-stats (kept for compatibility) */
@@ -796,7 +797,7 @@ body {
 }
 .modal-close:hover { color: var(--danger); border-color: var(--danger); }
 
-.modal-icon { font-size: 2.5rem; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
+.modal-icon { font-size: 2.5rem; background: var(--gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
 .modal-box h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
 .modal-box > p { color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem; }
 .modal-box form { display: flex; flex-direction: column; gap: 0; }
@@ -866,7 +867,7 @@ body {
   background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
   padding: 1rem 1.25rem; text-align: center;
 }
-.stat-mini h3 { font-size: 1.8rem; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.stat-mini h3 { font-size: 1.8rem; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .stat-mini p { font-size: 0.77rem; color: var(--text-muted); margin-top: 3px; }
 
 /* Star hover */
@@ -885,7 +886,35 @@ body {
   .hero-section { padding: 1.5rem; }
   .hero-left h1 { font-size: 1.8rem; }
   .hero-stats-grid { grid-template-columns: 1fr 1fr; }
-  .nav-links { display: none; }
+  
+  /* Show nav links as a bottom fixed bar on mobile */
+  .nav-links { 
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-nav);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    padding: 10px 15px;
+    margin: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-around;
+  }
+  
+  .nav-link {
+    flex-direction: column;
+    font-size: 0.75rem;
+    gap: 4px;
+    padding: 6px;
+  }
+  
+  .nav-link i { font-size: 1.3rem; }
+  
+  /* Add padding to bottom so content doesn't get hidden behind nav */
+  .main-content { padding-bottom: 75px; }
+  
   .issue-grid { grid-template-columns: 1fr; }
   .stats-row { flex-direction: column; }
   .how-it-works { grid-template-columns: 1fr; }
