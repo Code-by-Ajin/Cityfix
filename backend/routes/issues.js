@@ -9,7 +9,9 @@ const nodemailer = require('nodemailer');
 // Shared transporter for review-forward email
 function getTransporter() {
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.OWNER_EMAIL,
       pass: process.env.OWNER_EMAIL_PASS

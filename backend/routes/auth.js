@@ -99,7 +99,9 @@ const nodemailer = require('nodemailer');
 
 function getTransporter() {
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.OWNER_EMAIL,
       pass: process.env.OWNER_EMAIL_PASS
@@ -164,17 +166,16 @@ router.post('/rewards/claim', async (req, res) => {
   </div>
 </body>
 </html>`;
-      try {
-        await getTransporter().sendMail({
-          from: `"CityFix Rewards" <${process.env.OWNER_EMAIL}>`,
-          to: user.email,
-          subject: `🎉 CityFix: Your reward "${title || 'Special Reward'}" is ready!`,
-          html: htmlEmail,
-        });
+      getTransporter().sendMail({
+        from: `"CityFix Rewards" <${process.env.OWNER_EMAIL}>`,
+        to: user.email,
+        subject: `🎉 CityFix: Your reward "${title || 'Special Reward'}" is ready!`,
+        html: htmlEmail,
+      }).then(() => {
         console.log(`✉️  Reward email sent to ${user.email}`);
-      } catch (err) {
+      }).catch(err => {
         console.error('Failed to send reward email (Did you use a Gmail App Password?):', err.message);
-      }
+      });
     } else {
        console.log('ℹ️  Skipping reward email. OWNER_EMAIL_PASS not set in .env');
     }

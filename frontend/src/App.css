@@ -887,7 +887,7 @@ body {
   .hero-left h1 { font-size: 1.8rem; }
   .hero-stats-grid { grid-template-columns: 1fr 1fr; }
   
-  .navbar { height: 60px; padding: 0 10px; }
+  .navbar { height: 60px; padding: 0 10px; backdrop-filter: none; background: var(--bg-nav); }
   .nav-content { justify-content: space-between; flex-wrap: nowrap; gap: 0.25rem; width: 100%; }
   .nav-user { margin-left: 0; gap: 4px; }
   .theme-btn { width: 32px; height: 32px; font-size: 1rem; }

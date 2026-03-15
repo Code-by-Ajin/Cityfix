@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'https://cityfix-7709.onrender.com/api';
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const getAuthHeader = () => {
   const token = localStorage.getItem('cityfix_token');
