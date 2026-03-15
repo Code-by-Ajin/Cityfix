@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://cityfix-using-mern-stack-backend.onrender.com/api';
 
 const getAuthHeader = () => {
   const token = localStorage.getItem('cityfix_token');

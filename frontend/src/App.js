@@ -624,10 +624,25 @@ function IssueCard({ issue, showEmail = false, onStatusChange, currentUser, onRa
           <p className="card-desc">{issue.description}</p>
 
           {issue.status === 'solved' && issue.rating && (
-            <div className="rating-display" style={{ marginTop: '0.5rem', color: '#f59e0b', fontSize: '1.2rem' }}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <i key={i} className={i < issue.rating ? "ri-star-fill" : "ri-star-line"}></i>
-              ))}
+            <div className="rating-display" style={{ marginTop: '0.5rem' }}>
+              <div style={{ color: '#f59e0b', fontSize: '1.2rem' }}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <i key={i} className={i < issue.rating ? "ri-star-fill" : "ri-star-line"}></i>
+                ))}
+              </div>
+              {issue.review && (
+                <p style={{
+                  fontSize: '0.82rem',
+                  color: 'var(--text-muted)',
+                  fontStyle: 'italic',
+                  marginTop: '4px',
+                  lineHeight: '1.45',
+                  borderLeft: '3px solid var(--primary)',
+                  paddingLeft: '8px'
+                }}>
+                  "{issue.review}"
+                </p>
+              )}
             </div>
           )}
 

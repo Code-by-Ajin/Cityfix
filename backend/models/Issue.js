@@ -34,6 +34,18 @@ const issueSchema = new mongoose.Schema({
     max: 5,
     default: null
   },
+  review: {
+    type: String,
+    default: null
+  },
+  ratingToken: {
+    type: String,
+    default: null
+  },
+  ratingTokenUsed: {
+    type: Boolean,
+    default: false
+  },
   pointsAwarded: {
     type: Number,
     default: 0

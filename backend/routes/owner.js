@@ -1,17 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const Issue = require('../models/Issue');
 const User = require('../models/User');
 const { ownerAuth } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.OWNER_EMAIL,
-    pass: process.env.OWNER_EMAIL_PASS // User needs to set this App Password in .env
-  }
-});
+function getTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.OWNER_EMAIL,
+      pass: process.env.OWNER_EMAIL_PASS  // Must be a Gmail App Password, NOT your regular password
+    }
+  });
+}
 
 // @route  GET /api/owner/issues
 // @desc   Get all issues WITH reporter email (owner only)
@@ -32,7 +35,9 @@ router.get('/issues', ownerAuth, async (req, res) => {
       description: issue.description,
       image: issue.image,
       date: issue.createdAt,
-      status: issue.status
+      status: issue.status,
+      rating: issue.rating,
+      review: issue.review
     }));
 
     res.json(formattedIssues);
@@ -99,7 +104,7 @@ router.put('/issues/:id/status', ownerAuth, async (req, res) => {
     issue.pointsAwarded += pointsToAward;
     await issue.save();
 
-    // Award points to user
+    // Award points to user & get reporter info
     let reporterEmail = null;
     let reporterName = null;
     if (pointsToAward > 0 && issue.user) {
@@ -110,49 +115,102 @@ router.put('/issues/:id/status', ownerAuth, async (req, res) => {
         reporterEmail = user.email;
         reporterName = user.username;
       }
+    } else if (status === 'solved' && oldStatus !== 'solved' && issue.user) {
+      // Even if no extra points, still get reporter info for email
+      const user = await User.findById(issue.user);
+      if (user) {
+        reporterEmail = user.email;
+        reporterName = user.username;
+      }
     }
 
-    // Send email if solved — with rating link
-    if (status === 'solved' && oldStatus !== 'solved' && reporterEmail && process.env.OWNER_EMAIL_PASS) {
-      const appUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-      const htmlEmail = `
+    // ✉️  Send "SOLVED" notification email with direct star-rating links
+    if (status === 'solved' && oldStatus !== 'solved' && reporterEmail) {
+      if (!process.env.OWNER_EMAIL_PASS) {
+        console.log('ℹ️  Skipping email: set OWNER_EMAIL_PASS (Gmail App Password) in backend/.env to enable notifications.');
+      } else {
+        // Generate a secure one-time token for email-based rating
+        const ratingToken = crypto.randomBytes(32).toString('hex');
+        issue.ratingToken = ratingToken;
+        issue.ratingTokenUsed = false;
+        await issue.save();
+
+        const apiUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 5000}`;
+        const appUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+
+        // Build clickable star buttons (1–5), each goes directly to the rating page
+        const starLinks = [1, 2, 3, 4, 5].map(n => {
+          const url = `${apiUrl}/api/issues/${issue._id}/email-rate?token=${ratingToken}&rating=${n}`;
+          return `
+            <a href="${url}" style="
+              display:inline-block;
+              font-size:32px;
+              text-decoration:none;
+              color:#d1d5db;
+              margin:0 4px;
+              transition:color 0.1s;
+              line-height:1;
+            " title="Rate ${n} star${n > 1 ? 's' : ''}">&#9733;</a>`;
+        }).join('');
+
+        const htmlEmail = `
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding:20px;">
-  <div style="max-width:560px; margin:0 auto; background:white; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.1);">
-    <div style="background:linear-gradient(135deg,#2563eb,#06b6d4); padding:28px 32px; text-align:center;">
-      <h1 style="color:white; margin:0; font-size:22px;">✅ Issue Resolved!</h1>
-      <p style="color:rgba(255,255,255,0.85); margin:8px 0 0; font-size:14px;">CityFix Community Platform</p>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;margin:0;padding:24px 16px;">
+  <div style="max-width:560px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#2563eb,#06b6d4);padding:32px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:6px;">✅</div>
+      <h1 style="color:white;margin:0;font-size:22px;font-weight:700;">Issue Resolved!</h1>
+      <p style="color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:13px;">CityFix Community Platform</p>
     </div>
-    <div style="padding:28px 32px;">
-      <p style="font-size:15px; color:#333;">Hello <strong>${reporterName}</strong>,</p>
-      <p style="font-size:15px; color:#333;">Great news! The issue you reported has been marked as <strong style="color:#22c55e;">Solved</strong>.</p>
 
-      <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; padding:16px 20px; margin:20px 0;">
-        <p style="margin:0 0 6px; font-size:13px; color:#0369a1; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Issue Details</p>
-        <p style="margin:4px 0; font-size:14px; color:#1e3a5f;"><strong>Type:</strong> ${issue.type}</p>
-        <p style="margin:4px 0; font-size:14px; color:#1e3a5f;"><strong>Location:</strong> ${issue.location}</p>
-        <p style="margin:4px 0; font-size:14px; color:#1e3a5f;"><strong>Points Awarded:</strong> +${pointsToAward} 🎉</p>
+    <!-- Body -->
+    <div style="padding:32px;">
+      <p style="font-size:15px;color:#374151;margin-bottom:4px;">Hello <strong>${reporterName}</strong>,</p>
+      <p style="font-size:15px;color:#374151;margin-bottom:20px;">
+        Great news! The issue you reported has been marked as
+        <strong style="color:#22c55e;">Solved ✅</strong>.
+      </p>
+
+      <!-- Issue details -->
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+        <p style="margin:0 0 8px;font-size:12px;color:#0369a1;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;">Issue Details</p>
+        <p style="margin:4px 0;font-size:14px;color:#1e3a5f;"><strong>Type:</strong> ${issue.type}</p>
+        <p style="margin:4px 0;font-size:14px;color:#1e3a5f;"><strong>Location:</strong> ${issue.location}</p>
+        <p style="margin:4px 0;font-size:14px;color:#1e3a5f;"><strong>Points Awarded:</strong> +${pointsToAward} 🎉</p>
       </div>
 
-      <p style="font-size:15px; color:#333; font-weight:600; margin-bottom:12px;">⭐ How would you rate the resolution?</p>
-      <p style="font-size:13px; color:#666; margin-bottom:16px;">Your feedback helps improve our city services. Please log in to the app and rate this resolution:</p>
+      <!-- Star Rating Section -->
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:22px 20px;margin-bottom:24px;text-align:center;">
+        <p style="font-size:15px;color:#374151;font-weight:700;margin:0 0 6px;">⭐ Rate the Resolution</p>
+        <p style="font-size:13px;color:#6b7280;margin:0 0 18px;">
+          Click a star below to instantly submit your rating.<br>
+          You can also add a written review on the next page.
+        </p>
 
-      <div style="text-align:center; margin:16px 0; font-size:32px; letter-spacing:8px;">
-        ⭐⭐⭐⭐⭐
+        <!-- Clickable star links -->
+        <div style="margin:0 0 18px;">
+          ${starLinks}
+        </div>
+
+        <p style="font-size:12px;color:#9ca3af;margin:0;">
+          Each star opens a quick feedback page — no login required.
+        </p>
       </div>
 
-      <div style="text-align:center; margin:24px 0;">
-        <a href="${appUrl}" style="
-          display:inline-block; background:linear-gradient(135deg,#2563eb,#06b6d4);
-          color:white; text-decoration:none; padding:12px 28px; border-radius:8px;
-          font-size:15px; font-weight:600; letter-spacing:0.3px;">
-          🌐 Open CityFix App to Rate
+      <!-- CTA button -->
+      <div style="text-align:center;margin-bottom:24px;">
+        <a href="${apiUrl}/api/issues/${issue._id}/email-rate?token=${ratingToken}"
+           style="display:inline-block;background:linear-gradient(135deg,#2563eb,#06b6d4);color:white;text-decoration:none;padding:13px 32px;border-radius:10px;font-size:15px;font-weight:600;">
+          ⭐ Open Rating &amp; Review Page
         </a>
       </div>
 
-      <p style="font-size:13px; color:#999; text-align:center; margin-top:24px; border-top:1px solid #eee; padding-top:16px;">
+      <!-- Footer -->
+      <p style="font-size:13px;color:#9ca3af;text-align:center;border-top:1px solid #f3f4f6;padding-top:16px;margin:0;">
         Thank you for making your city better! 🏙️<br>
         <strong style="color:#2563eb;">The CityFix Team</strong>
       </p>
@@ -160,20 +218,21 @@ router.put('/issues/:id/status', ownerAuth, async (req, res) => {
   </div>
 </body>
 </html>`;
-      try {
-        await transporter.sendMail({
-          from: `"CityFix" <${process.env.OWNER_EMAIL}>`,
-          to: reporterEmail,
-          subject: `✅ CityFix: Your "${issue.type}" report has been solved!`,
-          html: htmlEmail,
-          text: `Hello ${reporterName}, Your issue "${issue.type}" at "${issue.location}" has been solved! You earned ${pointsToAward} points. Please open the CityFix app (${appUrl}) to rate the resolution. Thank you! - The CityFix Team`
-        });
-        console.log(`✉️  Solved notification email sent to ${reporterEmail}`);
-      } catch (err) {
-        console.error('Failed to send email (Did you use a Gmail App Password?):', err.message);
+
+        try {
+          const transporter = getTransporter();
+          await transporter.sendMail({
+            from: `"CityFix" <${process.env.OWNER_EMAIL}>`,
+            to: reporterEmail,
+            subject: `✅ CityFix: Your "${issue.type}" issue has been solved! Please rate us ⭐`,
+            html: htmlEmail,
+            text: `Hello ${reporterName}, your issue "${issue.type}" at "${issue.location}" has been solved! You earned +${pointsToAward} points. Please rate the resolution here: ${apiUrl}/api/issues/${issue._id}/email-rate?token=${ratingToken} — Thank you, The CityFix Team`
+          });
+          console.log(`✉️  Solved notification + rating email sent to ${reporterEmail}`);
+        } catch (err) {
+          console.error('❌ Failed to send solved email. Check Gmail App Password in .env:', err.message);
+        }
       }
-    } else if (status === 'solved' && !process.env.OWNER_EMAIL_PASS) {
-      console.log('ℹ️  Skipping email: set OWNER_EMAIL_PASS (App Password) in backend/.env to enable notifications.');
     }
 
     // Emit socket event
