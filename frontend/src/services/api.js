@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Use the deployed Render URL as the default to ensure Vercel frontend can connect
+const API_BASE = process.env.REACT_APP_API_URL || 'https://cityfix-7709.onrender.com/api';
 
 const getAuthHeader = () => {
   const token = localStorage.getItem('cityfix_token');
