@@ -887,6 +887,17 @@ body {
   .hero-left h1 { font-size: 1.8rem; }
   .hero-stats-grid { grid-template-columns: 1fr 1fr; }
   
+  .navbar { height: 60px; padding: 0 10px; }
+  .nav-content { justify-content: space-between; flex-wrap: nowrap; gap: 0.25rem; width: 100%; }
+  .nav-user { margin-left: 0; gap: 4px; }
+  .theme-btn { width: 32px; height: 32px; font-size: 1rem; }
+  .logo { font-size: 1.15rem; gap: 4px; }
+  .btn-sm { padding: 4px 10px; font-size: 0.78rem; }
+  .avatar { width: 24px; height: 24px; font-size: 0.8rem; }
+  .points-badge { padding: 2px 8px; font-size: 0.75rem; }
+  .profile-btn { padding: 4px 8px; font-size: 0.85rem; gap: 4px; }
+
+  
   /* Show nav links as a bottom fixed bar on mobile */
   .nav-links { 
     position: fixed;

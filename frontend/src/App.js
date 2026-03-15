@@ -196,15 +196,12 @@ function App() {
 
   useEffect(() => {
     if (currentUser?.email) {
-      try {
-        setClaimedRewards(JSON.parse(localStorage.getItem(`cityfix_claimed_rewards_${currentUser.email}`) || '[]'));
-      } catch {
-        setClaimedRewards([]);
-      }
+      const storedRewards = localStorage.getItem(`cityfix_claimed_rewards_${currentUser.email}`);
+      setClaimedRewards(storedRewards ? JSON.parse(storedRewards) : []);
     } else {
       setClaimedRewards([]);
     }
-  }, [currentUser?.email]);
+  }, [currentUser]);
 
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
@@ -227,6 +224,8 @@ function App() {
       localStorage.setItem('cityfix_user', JSON.stringify(user));
       localStorage.setItem('cityfix_token', token);
       setShowLogin(false);
+      const storedRewards = localStorage.getItem(`cityfix_claimed_rewards_${user.email}`);
+      setClaimedRewards(storedRewards ? JSON.parse(storedRewards) : []);
       showToast(`Welcome, ${user.username}!`, 'success');
       if (user.role === 'owner') setCurrentView('owner');
     } catch (err) {
